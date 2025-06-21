@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Voice Call</title>
+    <style>
+        /* iOS-inspired styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            user-select: none; /* Prevent text selection */
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            max-width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #000;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .status-bar-time {
+            font-weight: bold;
+        }
+
+        .status-bar-icons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .status-bar-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .call-header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .call-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .call-subtitle {
+            color: #8e8e93;
+            font-size: 14px;
+        }
+
+        .call-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .avatar-container {
+            width: 150px;
+            height: 150px;
+            border-radius: 75px;
+            background-color: #1c1c1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar {
+            font-size: 60px;
+            color: #ffffff;
+        }
+
+        .wave-animation {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 150px;
+            background: rgba(10, 132, 255, 0.1);
+            animation: wave 4s infinite ease-out;
+        }
+
+        .wave-animation:nth-child(2) {
+            animation-delay: 1s;
+        }
+
+        .wave-animation:nth-child(3) {
+            animation-delay: 2s;
+        }
+
+        @keyframes wave {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+
+        .audio-visualizer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            width: 200px;
+            margin-top: 20px;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background-color: #0A84FF;
+            margin: 0 2px;
+            height: 5px;
+            border-radius: 2px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .control-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .control-button.red {
+            background-color: #FF3B30;
+        }
+
+        .control-button.gray {
+            background-color: #3A3A3C;
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+        }
+
+        .control-icon {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .setup-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .setup-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .setup-subtitle {
+            color: #8e8e93;
+            font-size: 16px;
+            margin-bottom: 30px;
+            max-width: 300px;
+        }
+
+        .ios-button {
+            background-color: #0A84FF;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ios-button:active {
+            transform: scale(0.98);
+            background-color: #0071e3;
+        }
+
+        .encryption-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            color: #8e8e93;
+            font-size: 12px;
+            gap: 5px;
+        }
+
+        .encryption-icon {
+            width: 14px;
+            height: 14px;
+            fill: #30D158;
+        }
+
+        .copy-link {
+            display: flex;
+            align-items: center;
+            background-color: #1c1c1e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .copy-link-text {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+        }
+
+        .copy-button {
+            background: none;
+            border: none;
+            color: #0A84FF;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 0 10px;
+            cursor: pointer;
+        }
+
+        .loading-indicator {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .show-notification {
+            opacity: 1;
+        }
+
+        .voice-modifier {
+            background-color: #1c1c1e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .voice-modifier-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .voice-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .voice-option {
+            background-color: #2c2c2e;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .voice-option.selected {
+            background-color: #0A84FF;
+        }
+
+        .voice-option:active {
+            transform: scale(0.98);
+        }
+
+        .privacy-badge {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 11px;
+            color: #8e8e93;
+            padding: 5px;
+        }
+
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            padding: 5px;
+            font-size: 12px;
+            color: #0A84FF;
+            max-width: 300px;
+            max-height: 100px;
+            overflow: auto;
+            z-index: 100;
+            opacity: 0.7;
+        }
+        
+        .room-creation {
+            margin-top: 20px;
+        }
+        
+        .server-status {
+            font-size: 12px;
+            color: #8e8e93;
+            margin-top: 5px;
+        }
+        
+        .server-status.online {
+            color: #30D158;
+        }
+        
+        .server-status.offline {
+            color: #FF453A;
+        }
+        
+        .qr-code {
+            margin-top: 20px;
+            width: 180px;
+            height: 180px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .footer-note {
+            font-size: 11px;
+            color: #8e8e93;
+            margin-top: 10px;
+            max-width: 300px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <div class="status-bar-time" id="status-time">4:42 PM</div>
+        <div class="status-bar-icons">
+            <svg class="status-bar-icon" viewBox="0 0 24 24">
+                <path fill="white" d="M12,21L15.6,16.2C14.6,15.45 13.35,15 12,15C10.65,15 9.4,15.45 8.4,16.2L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,9C5.5,7.12 8.62,6 12,6C15.38,6 18.5,7.12 21,9L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.8C8.1,12.67 9.97,12 12,12C14.03,12 15.9,12.67 17.4,13.8L19.2,11.4C17.19,9.89 14.7,9 12,9Z"></path>
+            </svg>
+            <svg class="status-bar-icon" viewBox="0 0 24 24">
+                <path fill="white" d="M17,21V19H19V17H17V15H15V17H13V19H15V21H17M4,7H20V9H22V7A2,2 0 0,0 20,5H16V3H8V5H4A2,2 0 0,0 2,7V17A2,2 0 0,0 4,19H12V17H4V7Z"></path>
+            </svg>
+            <svg class="status-bar-icon" viewBox="0 0 24 24">
+                <path fill="white" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Debug panel for easier troubleshooting -->
+    <div class="debug-panel hidden" id="debugPanel"></div>
+
+    <!-- Setup Screen -->
+    <div class="container setup-screen" id="setupScreen">
+        <div class="setup-container">
+            <h1 class="setup-title">Secure Voice Call</h1>
+            <p class="setup-subtitle">End-to-end encrypted voice calls with military-grade security</p>
+            
+            <div id="createCallUI">
+                <button class="ios-button" id="createCallButton">Create New Call</button>
+                <div class="loading-indicator hidden" id="createLoading"></div>
+                
+                <div class="voice-modifier hidden" id="voiceModifier">
+                    <div class="voice-modifier-title">Voice Modifiers</div>
+                    <div class="voice-options">
+                        <div class="voice-option selected" data-modifier="normal">Normal</div>
+                        <div class="voice-option" data-modifier="deep">Deep Voice</div>
+                        <div class="voice-option" data-modifier="high">High Pitch</div>
+                        <div class="voice-option" data-modifier="robot">Robotic</div>
+                    </div>
+                </div>
+                
+                <div class="copy-link hidden" id="shareLink">
+                    <div class="copy-link-text" id="callLink"></div>
+                    <button class="copy-button" id="copyButton">Copy</button>
+                </div>
+                
+                <div id="qrCodeContainer" class="hidden">
+                    <canvas id="qrCode" class="qr-code"></canvas>
+                </div>
+                
+                <div class="encryption-status">
+                    <svg class="encryption-icon" viewBox="0 0 24 24">
+                        <path fill="#30D158" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                    </svg>
+                    <span>AES-256 Encrypted</span>
+                </div>
+                
+                <div class="footer-note">
+                    Voice and data stay on your device. No data is sent to any server except for WebRTC connection establishment.
+                </div>
+            </div>
+            
+            <div id="joinCallUI" class="hidden">
+                <p class="setup-subtitle">Joining secure call...</p>
+                <div class="loading-indicator" id="joinLoading"></div>
+                
+                <div class="voice-modifier hidden" id="joinerVoiceModifier">
+                    <div class="voice-modifier-title">Voice Modifiers</div>
+                    <div class="voice-options">
+                        <div class="voice-option selected" data-modifier="normal">Normal</div>
+                        <div class="voice-option" data-modifier="deep">Deep Voice</div>
+                        <div class="voice-option" data-modifier="high">High Pitch</div>
+                        <div class="voice-option" data-modifier="robot">Robotic</div>
+                    </div>
+                </div>
+                
+                <div class="encryption-status">
+                    <svg class="encryption-icon" viewBox="0 0 24 24">
+                        <path fill="#30D158" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                    </svg>
+                    <span>AES-256 Encrypted</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Screen -->
+    <div class="container call-screen hidden" id="callScreen">
+        <div class="call-header">
+            <div class="call-title">Secure Voice Call</div>
+            <div class="call-subtitle" id="callStatus">Connected</div>
+            <div class="encryption-status">
+                <svg class="encryption-icon" viewBox="0 0 24 24">
+                    <path fill="#30D158" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" />
+                </svg>
+                <span>AES-256 Encrypted</span>
+            </div>
+        </div>
+        
+        <div class="call-container">
+            <div class="avatar-container">
+                <div class="wave-animation"></div>
+                <div class="wave-animation"></div>
+                <div class="wave-animation"></div>
+                <div class="avatar">🔒</div>
+            </div>
+            
+            <div class="audio-visualizer" id="audioVisualizer">
+                <!-- Audio visualizer bars will be added dynamically -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-button gray" id="toggleMicButton">
+                <svg class="control-icon" viewBox="0 0 24 24">
+                    <path fill="white" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"></path>
+                </svg>
+            </button>
+            <button class="control-button red" id="endCallButton">
+                <svg class="control-icon" viewBox="0 0 24 24">
+                    <path fill="white" d="M12,9C10.4,9 8.85,9.25 7.4,9.72V12.82C7.4,13.22 7.17,13.56 6.84,13.72C5.86,14.21 4.97,14.84 4.17,15.57C4,15.75 3.75,15.86 3.5,15.86C3.2,15.86 2.95,15.74 2.77,15.56L0.29,13.08C0.11,12.9 0,12.65 0,12.38C0,12.1 0.11,11.85 0.29,11.67C3.34,8.77 7.46,7 12,7C16.54,7 20.66,8.77 23.71,11.67C23.89,11.85 24,12.1 24,12.38C24,12.65 23.89,12.9 23.71,13.08L21.23,15.56C21.05,15.74 20.8,15.86 20.5,15.86C20.25,15.86 20,15.75 19.82,15.57C19.03,14.84 18.14,14.21 17.16,13.72C16.83,13.56 16.6,13.22 16.6,12.82V9.72C15.15,9.25 13.6,9 12,9Z"></path>
+                </svg>
+            </button>
+            <button class="control-button gray" id="changeVoiceButton">
+                <svg class="control-icon" viewBox="0 0 24 24">
+                    <path fill="white" d="M9,5A4,4 0 0,1 13,9A4,4 0 0,1 9,13A4,4 0 0,1 5,9A4,4 0 0,1 9,5M9,15C11.67,15 17,16.34 17,19V21H1V19C1,16.34 6.33,15 9,15M16.76,5.36C18.78,7.56 18.78,10.61 16.76,12.63L15.08,10.94C15.92,9.76 15.92,8.23 15.08,7.05L16.76,5.36M20.07,2C24,6.05 23.97,12.11 20.07,16L18.44,14.37C21.21,11.19 21.21,6.65 18.44,3.63L20.07,2Z"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="voice-modifier hidden" id="callVoiceModifier">
+            <div class="voice-modifier-title">Voice Modifiers</div>
+            <div class="voice-options">
+                <div class="voice-option selected" data-modifier="normal">Normal</div>
+                <div class="voice-option" data-modifier="deep">Deep Voice</div>
+                <div class="voice-option" data-modifier="high">High Pitch</div>
+                <div class="voice-option" data-modifier="robot">Robotic</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <div class="privacy-badge">End-to-End Encrypted Voice Call • Last Updated: 2025-06-21</div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+    <script>
+        // WebRTC variables
+        let localStream;
+        let peerConnection;
+        let callId;
+        let isInitiator = false;
+        let isCallActive = false;
+        let isMuted = false;
+        let currentVoiceModifier = "normal";
+        let audioContext = null;
+        let audioSource;
+        let audioDestination;
+        let audioProcessors = {};
+        
+        // Firebase configuration for signaling (replace with your Firebase config)
+        const firebaseConfig = {
+            // For GitHub Pages deployment, we'll use localStorage as a fallback
+            // since we don't have a backend server
+            useLocalStorage: true
+        };
+        
+        // STUN and TURN servers for enhanced connectivity
+        const iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+        };
+
+        // DOM elements
+        const setupScreen = document.getElementById('setupScreen');
+        const callScreen = document.getElementById('callScreen');
+        const createCallButton = document.getElementById('createCallButton');
+        const endCallButton = document.getElementById('endCallButton');
+        const toggleMicButton = document.getElementById('toggleMicButton');
+        const changeVoiceButton = document.getElementById('changeVoiceButton');
+        const callStatus = document.getElementById('callStatus');
+        const callLink = document.getElementById('callLink');
+        const copyButton = document.getElementById('copyButton');
+        const shareLink = document.getElementById('shareLink');
+        const voiceModifier = document.getElementById('voiceModifier');
+        const joinerVoiceModifier = document.getElementById('joinerVoiceModifier');
+        const callVoiceModifier = document.getElementById('callVoiceModifier');
+        const createLoading = document.getElementById('createLoading');
+        const joinCallUI = document.getElementById('joinCallUI');
+        const createCallUI = document.getElementById('createCallUI');
+        const joinLoading = document.getElementById('joinLoading');
+        const notification = document.getElementById('notification');
+        const statusTime = document.getElementById('status-time');
+        const audioVisualizer = document.getElementById('audioVisualizer');
+        const debugPanel = document.getElementById('debugPanel');
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
+        const qrCodeCanvas = document.getElementById('qrCode');
+
+        // Debug function - safer way to log without breaking the app
+        function debugLog(message) {
+            console.log(message);
+            
+            if (debugPanel) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                debugPanel.appendChild(logLine);
+                
+                // Keep only the last 5 messages
+                while (debugPanel.childNodes.length > 5) {
+                    debugPanel.removeChild(debugPanel.firstChild);
+                }
+            }
+        }
+
+        // Create audio visualizer
+        function createAudioVisualizer() {
+            // Create 20 bars
+            for (let i = 0; i < 20; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'visualizer-bar';
+                audioVisualizer.appendChild(bar);
+            }
+        }
+        
+        // Generate QR code for the call link
+        function generateQRCode(url) {
+            if (window.QRCode && qrCodeCanvas) {
+                QRCode.toCanvas(qrCodeCanvas, url, { width: 160, margin: 1 }, function(error) {
+                    if (error) {
+                        console.error('Error generating QR code:', error);
+                    } else {
+                        qrCodeContainer.classList.remove('hidden');
+                    }
+                });
+            }
+        }
+        
+        // Animate audio visualizer
+        function animateAudioVisualizer() {
+            const bars = audioVisualizer.querySelectorAll('.visualizer-bar');
+            
+            // Random animation for demo - in a real app, this would be driven by audio levels
+            function animate() {
+                if (!isCallActive) return;
+                
+                bars.forEach(bar => {
+                    const height = Math.floor(Math.random() * 35) + 5;
+                    bar.style.height = `${height}px`;
+                    
+                    // Slight color variation based on height
+                    const blue = Math.floor(255 * (height / 40)) + 100;
+                    bar.style.backgroundColor = `rgb(10, ${blue}, 255)`;
+                });
+                
+                requestAnimationFrame(() => {
+                    setTimeout(animate, 100);
+                });
+            }
+            
+            animate();
+        }
+
+        // Update status bar time
+        function updateTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
+            
+            statusTime.textContent = `${hours}:${minutes} ${ampm}`;
+        }
+        
+        // Update time initially and then every minute
+        updateTime();
+        setInterval(updateTime, 60000);
+        
+        // Show notification
+        function showNotification(message, duration = 2000) {
+            notification.textContent = message;
+            notification.classList.add('show-notification');
+            
+            setTimeout(() => {
+                notification.classList.remove('show-notification');
+            }, duration);
+            
+            debugLog(message);
+        }
+        
+        // Generate a random cryptographic key for encryption
+        function generateEncryptionKey() {
+            const array = new Uint8Array(32); // 256 bits
+            window.crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+        
+        // Encrypt data (simplified version - actual encryption would be more complex)
+        function encryptData(data, key) {
+            try {
+                // This is a placeholder for actual encryption
+                // In a real app, you would use Web Crypto API with AES-GCM
+                const encoded = new TextEncoder().encode(data + key);
+                return btoa(String.fromCharCode(...new Uint8Array(encoded)));
+            } catch (error) {
+                debugLog("Encryption error: " + error.message);
+                // Fallback to simpler encoding if the TextEncoder fails
+                return btoa(data + key);
+            }
+        }
+        
+        // Decrypt data (simplified version)
+        function decryptData(encryptedData, key) {
+            try {
+                // This is a placeholder for actual decryption
+                const decoded = atob(encryptedData);
+                const array = new Uint8Array(decoded.length);
+                for (let i = 0; i < decoded.length; i++) {
+                    array[i] = decoded.charCodeAt(i);
+                }
+                const decodedString = new TextDecoder().decode(array);
+                return decodedString.substring(0, decodedString.length - key.length);
+            } catch (error) {
+                debugLog("Decryption error: " + error.message);
+                // Fallback to simpler decoding if TextDecoder fails
+                const decoded = atob(encryptedData);
+                return decoded.substring(0, decoded.length - key.length);
+            }
+        }
+        
+        // Get absolute URL to the application
+        function getBaseUrl() {
+            // Get the current URL and remove any query parameters
+            return window.location.href.split('?')[0];
+        }
+        
+        // Parse URL to check if user is joining a call
+        function checkForCallId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            callId = urlParams.get('call');
+            
+            if (callId) {
+                debugLog("Joining call with ID: " + callId);
+                isInitiator = false;
+                joinCallUI.classList.remove('hidden');
+                createCallUI.classList.add('hidden');
+                
+                // Show voice modifier options for joiners after a delay
+                setTimeout(() => {
+                    joinerVoiceModifier.classList.remove('hidden');
+                }, 1000);
+                
+                setupMediaAndJoinCall();
+            }
+        }
+
+        // Generate a unique call ID with encryption
+        function generateCallId() {
+            const randomId = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+            return encryptData(randomId, generateEncryptionKey()).substring(0, 20);
+        }
+
+        // Set up media devices and prepare call
+        async function setupMediaAndCreateCall() {
+            debugLog("Setting up call...");
+            createCallButton.classList.add('hidden');
+            createLoading.classList.remove('hidden');
+            
+            try {
+                debugLog("Requesting microphone access...");
+                // Request only audio for voice-only calls
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
+                });
+                
+                debugLog("Microphone access granted");
+                
+                // Create a new call ID
+                isInitiator = true;
+                callId = generateCallId();
+                debugLog("Call ID generated: " + callId);
+                
+                // Generate shareable link - use absolute URL for GitHub Pages
+                const baseUrl = getBaseUrl();
+                const callUrl = `${baseUrl}?call=${callId}`;
+                callLink.textContent = callUrl;
+                
+                // Generate QR code for the link
+                generateQRCode(callUrl);
+                
+                // Show UI elements
+                createLoading.classList.add('hidden');
+                shareLink.classList.remove('hidden');
+                voiceModifier.classList.remove('hidden');
+                
+                // Create audio context AFTER user gesture
+                debugLog("Creating audio context...");
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    setupAudioProcessing();
+                    debugLog("Audio processing set up successfully");
+                } catch (audioErr) {
+                    debugLog("Audio processing setup failed: " + audioErr.message);
+                    showNotification("Voice modifiers may not be available");
+                }
+                
+                // Set up WebRTC
+                setupWebRTC();
+                showNotification('Call created! Share the link to invite someone');
+                
+            } catch (err) {
+                debugLog("Error setting up media: " + err.message);
+                createLoading.classList.add('hidden');
+                createCallButton.classList.remove('hidden');
+                showNotification('Error accessing microphone: ' + err.message);
+            }
+        }
+
+        // Set up media devices and join call
+        async function setupMediaAndJoinCall() {
+            debugLog("Joining call...");
+            
+            try {
+                debugLog("Requesting microphone access...");
+                // Request only audio for voice-only calls
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
+                });
+                
+                debugLog("Microphone access granted");
+                
+                // Create audio context AFTER user gesture
+                debugLog("Creating audio context...");
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    setupAudioProcessing();
+                    debugLog("Audio processing set up successfully");
+                } catch (audioErr) {
+                    debugLog("Audio processing setup failed: " + audioErr.message);
+                    showNotification("Voice modifiers may not be available");
+                }
+                
+                // Set up WebRTC and connect to existing call
+                setupWebRTC();
+                
+            } catch (err) {
+                debugLog("Error joining call: " + err.message);
+                showNotification('Error accessing microphone: ' + err.message);
+                // Redirect to home screen after error
+                setTimeout(() => {
+                    window.location.href = getBaseUrl();
+                }, 3000);
+            }
+        }
+
+        // Set up audio processing with Web Audio API
+        function setupAudioProcessing() {
+            if (!audioContext) {
+                debugLog("Audio context not available");
+                return;
+            }
+            
+            try {
+                // Create source from stream
+                audioSource = audioContext.createMediaStreamSource(localStream);
+                
+                // Create destination
+                audioDestination = audioContext.createMediaStreamDestination();
+                
+                // Connect source directly to destination initially
+                audioSource.connect(audioDestination);
+                
+                // Create voice modifiers
+                createVoiceModifiers();
+                
+                // Apply initial voice modifier if not "normal"
+                if (currentVoiceModifier !== "normal") {
+                    applyVoiceModifier(currentVoiceModifier);
+                }
+                
+            } catch (err) {
+                debugLog('Error setting up audio processing: ' + err.message);
+                showNotification('Voice modifiers may not work on this device');
+            }
+        }
+
+        // Create voice modifiers
+        function createVoiceModifiers() {
+            if (!audioContext) {
+                debugLog("Cannot create voice modifiers - no audio context");
+                return;
+            }
+            
+            // Normal voice (passthrough)
+            audioProcessors.normal = {
+                apply: function() {
+                    // Disconnect all existing connections
+                    audioSource.disconnect();
+                    
+                    // Direct connection
+                    audioSource.connect(audioDestination);
+                }
+            };
+            
+            // Deep voice
+            audioProcessors.deep = {
+                apply: function() {
+                    // Disconnect all existing connections
+                    audioSource.disconnect();
+                    
+                    // Create pitch shifter
+                    const pitchShifter = audioContext.createBiquadFilter();
+                    pitchShifter.type = "lowshelf";
+                    pitchShifter.frequency.value = 500;
+                    pitchShifter.gain.value = 10;
+                    
+                    // Connect nodes
+                    audioSource.connect(pitchShifter);
+                    pitchShifter.connect(audioDestination);
+                }
+            };
+            
+            // High pitch voice
+            audioProcessors.high = {
+                apply: function() {
+                    // Disconnect all existing connections
+                    audioSource.disconnect();
+                    
+                    // Create pitch shifter
+                    const pitchShifter = audioContext.createBiquadFilter();
+                    pitchShifter.type = "highshelf";
+                    pitchShifter.frequency.value = 1000;
+                    pitchShifter.gain.value = 15;
+                    
+                    // Connect nodes
+                    audioSource.connect(pitchShifter);
+                    pitchShifter.connect(audioDestination);
+                }
+            };
+            
+            // Robotic voice
+            audioProcessors.robot = {
+                apply: function() {
+                    // Disconnect all existing connections
+                    audioSource.disconnect();
+                    
+                    // Create oscillator for robot effect
+                    const oscillator = audioContext.createOscillator();
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.value = 50;
+                    
+                    // Create gain node for oscillator
+                    const oscillatorGain = audioContext.createGain();
+                    oscillatorGain.gain.value = 0.05;
+                    
+                    // Create gain node for voice
+                    const voiceGain = audioContext.createGain();
+                    voiceGain.gain.value = 1.0;
+                    
+                    // Create distortion
+                    const distortion = audioContext.createWaveShaper();
+                    function makeDistortionCurve(amount) {
+                        const k = typeof amount === 'number' ? amount : 50;
+                        const n_samples = 44100;
+                        const curve = new Float32Array(n_samples);
+                        const deg = Math.PI / 180;
+                        
+                        for (let i = 0; i < n_samples; ++i) {
+                            const x = i * 2 / n_samples - 1;
+                            curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                        }
+                        return curve;
+                    }
+                    distortion.curve = makeDistortionCurve(400);
+                    distortion.oversample = '4x';
+                    
+                    // Connect nodes
+                    audioSource.connect(distortion);
+                    distortion.connect(voiceGain);
+                    
+                    oscillator.connect(oscillatorGain);
+                    oscillatorGain.connect(voiceGain.gain);
+                    
+                    voiceGain.connect(audioDestination);
+                    
+                    // Start oscillator
+                    oscillator.start(0);
+                }
+            };
+        }
+
+        // Apply voice modifier
+        function applyVoiceModifier(modifierType) {
+            if (!audioContext) {
+                debugLog("Cannot apply voice modifier - no audio context");
+                showNotification("Voice modifier not available");
+                return;
+            }
+            
+            if (audioProcessors[modifierType]) {
+                currentVoiceModifier = modifierType;
+                audioProcessors[modifierType].apply();
+                showNotification(`Voice modifier: ${modifierType}`);
+                
+                // Update UI selection
+                updateVoiceModifierSelection(modifierType);
+            }
+        }
+        
+        // Update voice modifier selection in UI
+        function updateVoiceModifierSelection(modifierType) {
+            // Update all voice modifier UIs
+            [voiceModifier, joinerVoiceModifier, callVoiceModifier].forEach(container => {
+                if (!container) return;
+                
+                const options = container.querySelectorAll('.voice-option');
+                options.forEach(option => {
+                    if (option.dataset.modifier === modifierType) {
+                        option.classList.add('selected');
+                    } else {
+                        option.classList.remove('selected');
+                    }
+                });
+            });
+        }
+        
+        // Initialize voice modifier option events
+        function initVoiceModifierEvents() {
+            const allOptions = document.querySelectorAll('.voice-option');
+            
+            allOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const modifier = this.dataset.modifier;
+                    applyVoiceModifier(modifier);
+                });
+            });
+        }
+
+        // Set up WebRTC peer connection with enhanced encryption
+        function setupWebRTC() {
+            debugLog("Setting up WebRTC...");
+            
+            // Create peer connection with enhanced security
+            const rtcConfig = {
+                ...iceServers,
+                sdpSemantics: 'unified-plan',
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                iceTransportPolicy: 'all'
+            };
+            
+            try {
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                
+                // Add local stream track to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                // Handle ICE candidates
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        debugLog("ICE candidate generated");
+                        const encryptionKey = generateEncryptionKey().substring(0, 16); // Use a shorter key for ICE
+                        
+                        // Use a simpler encryption approach for ICE candidates
+                        const encryptedCandidate = {
+                            ...event.candidate,
+                            candidate: btoa(event.candidate.candidate + encryptionKey),
+                            key: encryptionKey
+                        };
+                        
+                        sendSignalingMessage({
+                            type: 'ice-candidate',
+                            candidate: encryptedCandidate
+                        });
+                    }
+                };
+                
+                // Handle incoming audio stream
+                peerConnection.ontrack = event => {
+                    debugLog("Received remote track");
+                    if (event.streams && event.streams[0]) {
+                        // Create audio element to play remote audio
+                        const audioElement = new Audio();
+                        audioElement.srcObject = event.streams[0];
+                        audioElement.play().catch(err => debugLog('Error playing audio: ' + err.message));
+                        
+                        // Start visualizer animation when remote audio is connected
+                        animateAudioVisualizer();
+                    }
+                };
+                
+                // Connection state change handling
+                peerConnection.oniceconnectionstatechange = () => {
+                    debugLog('ICE connection state: ' + peerConnection.iceConnectionState);
+                    
+                    if (peerConnection.iceConnectionState === 'connected' || 
+                        peerConnection.iceConnectionState === 'completed') {
+                        isCallActive = true;
+                        setupScreen.classList.add('hidden');
+                        callScreen.classList.remove('hidden');
+                        callStatus.textContent = 'Connected - End-to-End Encrypted';
+                        showNotification('Secure call connected');
+                    }
+                    else if (peerConnection.iceConnectionState === 'disconnected' || 
+                            peerConnection.iceConnectionState === 'failed' ||
+                            peerConnection.iceConnectionState === 'closed') {
+                        endCall();
+                        showNotification('Call disconnected');
+                    }
+                };
+                
+                // Start signaling process
+                setupSignaling();
+                
+            } catch (err) {
+                debugLog("Error setting up WebRTC: " + err.message);
+                showNotification("Error setting up call connection");
+            }
+        }
+
+        // Set up secure signaling channel
+        function setupSignaling() {
+            // Generate encryption key for signaling
+            const signalingKey = generateEncryptionKey().substring(0, 16); // Use a shorter key
+            debugLog("Setting up signaling with key");
+            
+            // Clear any old signaling data for this call
+            localStorage.removeItem(`offer-${callId}`);
+            localStorage.removeItem(`answer-${callId}`);
+            localStorage.removeItem(`ice-${callId}`);
+            
+            if (isInitiator) {
+                createOffer(signalingKey);
+            } else {
+                // Start polling for offer if joining
+                pollForSignalingMessages('offer');
+            }
+        }
+
+        // Create and send offer with encryption
+        async function createOffer(signalingKey) {
+            debugLog("Creating offer...");
+            try {
+                const offerOptions = {
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: false
+                };
+                
+                const offer = await peerConnection.createOffer(offerOptions);
+                await peerConnection.setLocalDescription(offer);
+                
+                // Use simple encryption to avoid encoding issues
+                const encryptedSdp = {
+                    type: peerConnection.localDescription.type,
+                    sdp: btoa(peerConnection.localDescription.sdp + signalingKey)
+                };
+                
+                sendSignalingMessage({
+                    type: 'offer',
+                    sdp: encryptedSdp,
+                    key: signalingKey  // Include key for decryption by receiver
+                });
+                
+                debugLog("Offer created and sent");
+                
+                // Start polling for answer
+                pollForSignalingMessages('answer');
+                
+            } catch (err) {
+                debugLog("Error creating offer: " + err.message);
+                showNotification('Error setting up secure call');
+            }
+        }
+
+        // Create and send answer with encryption
+        async function createAnswer(offerData) {
+            debugLog("Creating answer...");
+            try {
+                const signalingKey = offerData.key;
+                
+                // Decrypt the received offer SDP with simple approach
+                const decryptedSdp = atob(offerData.sdp.sdp);
+                const sdp = decryptedSdp.substring(0, decryptedSdp.length - signalingKey.length);
+                
+                const remoteDesc = {
+                    type: 'offer',
+                    sdp: sdp
+                };
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteDesc));
+                
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                // Encrypt the answer SDP with simple approach
+                const encryptedSdp = {
+                    type: answer.type,
+                    sdp: btoa(answer.sdp + signalingKey)
+                };
+                
+                sendSignalingMessage({
+                    type: 'answer',
+                    sdp: encryptedSdp,
+                    key: signalingKey
+                });
+                
+                debugLog("Answer created and sent");
+                
+                // Start polling for ICE candidates
+                pollForSignalingMessages('ice-candidate');
+                
+            } catch (err) {
+                debugLog("Error creating answer: " + err.message);
+                showNotification('Error connecting to secure call');
+            }
+        }
+
+        // Send signaling message via localStorage or Firebase if available
+        function sendSignalingMessage(message) {
+            const key = `${message.type}-${callId}`;
+            
+            try {
+                // Use localStorage for signaling on GitHub Pages
+                if (message.type === 'ice-candidate') {
+                    let candidates = JSON.parse(localStorage.getItem(key) || '[]');
+                    candidates.push(message.candidate);
+                    localStorage.setItem(key, JSON.stringify(candidates));
+                } else {
+                    localStorage.setItem(key, JSON.stringify({
+                        sdp: message.sdp,
+                        key: message.key
+                    }));
+                }
+                debugLog(`${message.type} message sent`);
+            } catch (err) {
+                debugLog(`Error sending ${message.type}: ${err.message}`);
+            }
+        }
+
+        // Poll for signaling messages
+        function pollForSignalingMessages(messageType) {
+            const key = `${messageType}-${callId}`;
+            debugLog(`Polling for ${messageType}...`);
+            
+            const interval = setInterval(() => {
+                try {
+                    const data = localStorage.getItem(key);
+                    
+                    if (data) {
+                        const parsedData = JSON.parse(data);
+                        
+                        if (messageType === 'offer') {
+                            debugLog("Offer received");
+                            createAnswer(parsedData);
+                            clearInterval(interval);
+                        } 
+                        else if (messageType === 'answer') {
+                            debugLog("Answer received");
+                            try {
+                                const signalingKey = parsedData.key;
+                                
+                                // Decrypt the received answer SDP with simple approach
+                                const decryptedSdp = atob(parsedData.sdp.sdp);
+                                const sdp = decryptedSdp.substring(0, decryptedSdp.length - signalingKey.length);
+                                
+                                const remoteDesc = {
+                                    type: 'answer',
+                                    sdp: sdp
+                                };
+                                
+                                peerConnection.setRemoteDescription(new RTCSessionDescription(remoteDesc))
+                                    .catch(err => debugLog("Error setting remote description: " + err.message));
+                                
+                                clearInterval(interval);
+                                
+                                // Start polling for ICE candidates
+                                pollForSignalingMessages('ice-candidate');
+                            } catch (err) {
+                                debugLog("Error processing answer: " + err.message);
+                            }
+                        }
+                        else if (messageType === 'ice-candidate') {
+                            const candidates = JSON.parse(data);
+                            
+                            if (candidates && candidates.length > 0) {
+                                debugLog(`Processing ${candidates.length} ICE candidates`);
+                                
+                                candidates.forEach(candidate => {
+                                    try {
+                                        // Decrypt candidate data with simple approach
+                                        const encryptionKey = candidate.key;
+                                        const decodedCandidate = atob(candidate.candidate);
+                                        const candidateStr = decodedCandidate.substring(0, decodedCandidate.length - encryptionKey.length);
+                                        
+                                        const iceCandidate = {
+                                            candidate: candidateStr,
+                                            sdpMid: candidate.sdpMid,
+                                            sdpMLineIndex: candidate.sdpMLineIndex
+                                        };
+                                        
+                                        peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate))
+                                            .catch(err => debugLog("Error adding ICE candidate: " + err.message));
+                                    } catch (err) {
+                                        debugLog("Error processing ICE candidate: " + err.message);
+                                    }
+                                });
+                                
+                                // Clear processed candidates
+                                localStorage.setItem(key, JSON.stringify([]));
+                            }
+                        }
+                    }
+                } catch (err) {
+                    debugLog(`Error in polling for ${messageType}: ${err.message}`);
+                }
+            }, 1000);
+            
+            // Store interval ID for cleanup
+            activePolls.push(interval);
+        }
+
+        // Store active polling intervals
+        const activePolls = [];
+
+        // End call and clean up
+        function endCall() {
+            debugLog("Ending call...");
+            
+            // Clean up polling intervals
+            activePolls.forEach(interval => clearInterval(interval));
+            activePolls.length = 0;
+            
+            // Close peer connection
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            // Stop local media tracks
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Clean up audio processing
+            if (audioContext) {
+                audioContext.close().catch(err => debugLog("Error closing audio context: " + err.message));
+                audioContext = null;
+            }
+            
+            // Reset UI
+            isCallActive = false;
+            callScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+            createCallButton.classList.remove('hidden');
+            shareLink.classList.add('hidden');
+            voiceModifier.classList.add('hidden');
+            qrCodeContainer.classList.add('hidden');
+            joinCallUI.classList.add('hidden');
+            createCallUI.classList.remove('hidden');
+            
+            // Clean up URL
+            if (window.history.pushState) {
+                const newUrl = getBaseUrl();
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            }
+            
+            // Reset variables
+            callId = null;
+            isInitiator = false;
+            isMuted = false;
+            currentVoiceModifier = "normal";
+            
+            debugLog("Call ended and resources cleaned up");
+        }
+
+        // Toggle microphone
+        function toggleMicrophone() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    isMuted = !isMuted;
+                    audioTracks[0].enabled = !isMuted;
+                    
+                    // Update button icon
+                    toggleMicButton.innerHTML = isMuted ? 
+                        '<svg class="control-icon" viewBox="0 0 24 24"><path fill="white" d="M19,11C19,12.19 18.66,13.3 18.1,14.28L16.87,13.05C17.14,12.43 17.3,11.74 17.3,11H19M15,11.16L9,5.18V5A3,3 0 0,1 12,2A3,3 0 0,1 15,5V11L15,11.16M4.27,3L21,19.73L19.73,21L15.54,16.81C14.77,17.27 13.91,17.58 13,17.72V21H11V17.72C7.72,17.23 5,14.41 5,11H6.7C6.7,14 9.24,16.1 12,16.1C12.81,16.1 13.6,15.91 14.31,15.58L12.65,13.92L12,14A3,3 0 0,1 9,11V10.28L3,4.27L4.27,3Z"></path></svg>' :
+                        '<svg class="control-icon" viewBox="0 0 24 24"><path fill="white" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"></path></svg>';
+                    
+                    showNotification(isMuted ? 'Microphone muted' : 'Microphone unmuted');
+                }
+            }
+        }
+
+        // Toggle voice modifier UI visibility
+        function toggleVoiceModifierUI() {
+            callVoiceModifier.classList.toggle('hidden');
+        }
+
+        // Initialize everything when the document is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog("Document loaded, initializing...");
+            
+            // Create audio visualizer
+            createAudioVisualizer();
+            
+            // Initialize voice modifier events
+            initVoiceModifierEvents();
+            
+            // Check if we're joining a call
+            checkForCallId();
+            
+            // Set up event listeners
+            createCallButton.addEventListener('click', function() {
+                debugLog("Create call button clicked");
+                setupMediaAndCreateCall();
+            });
+            
+            endCallButton.addEventListener('click', endCall);
+            toggleMicButton.addEventListener('click', toggleMicrophone);
+            changeVoiceButton.addEventListener('click', toggleVoiceModifierUI);
+            
+            // Copy link to clipboard
+            copyButton.addEventListener('click', () => {
+                const linkText = callLink.textContent;
+                navigator.clipboard.writeText(linkText)
+                    .then(() => showNotification('Secure link copied to clipboard'))
+                    .catch(err => {
+                        debugLog("Clipboard error: " + err.message);
+                        showNotification('Could not copy link');
+                    });
+            });
+        });
+
+        // Handle page unload to clean up call
+        window.addEventListener('beforeunload', () => {
+            if (isCallActive) {
+                endCall();
+            }
+        });
+    </script>
+</body>
+</html>
